@@ -56,11 +56,11 @@ namespace GUI
 
         }
 
-        private async void Form1_Load(object sender, EventArgs e)
+        private void Form1_Load(object sender, EventArgs e)
         {
             RefreshListView();
-            await RefreshKategoriList();
-            await Timer();
+            RefreshKategoriListAsync(lbxKategorier, cbxKategori);
+            Timer();
 
         }
 
@@ -117,7 +117,7 @@ namespace GUI
             RefreshListView();
         }
 
-        private async void btnSparaKategori_Click(object sender, EventArgs e)
+        private void btnSparaKategori_Click(object sender, EventArgs e)
         {
             KategoriValidator.ValidateKategori(tbxKategorier.Text);
 
@@ -125,19 +125,19 @@ namespace GUI
             {
                 string kategori = tbxKategorier.Text;
                 EntityCreater.CreateKategori(kategori);
-                await RefreshKategoriList();
-            }
-            else
+                RefreshKategoriListAsync(lbxKategorier, cbxKategori);
+
+            } else
             {
                 tbxKategorier.Text = "Kategori finns redan";
             }
 
         }
 
-        private async void btnTaBortKategori_Click(object sender, EventArgs e)
+        private void btnTaBortKategori_Click(object sender, EventArgs e)
         {
             SerializeHandler.RemoveKategori(tbxKategorier.Text);
-            await RefreshKategoriList();
+            RefreshKategoriListAsync(lbxKategorier, cbxKategori);
         }
 
         private void btnTaBortAvsnitt_Click(object sender, EventArgs e)
@@ -177,7 +177,7 @@ namespace GUI
             lwPodcast.Items.Clear();
             if (podcasts != null)
             {
-                foreach (var p in podcasts)
+                foreach (Podcast p in podcasts)
                 {
                     var row = new string[] { p.Url, p.Name, p.AntalAvsnitt.ToString(), p.UppdateringsFrekvens, p.Kategori };
                     var lvi = new ListViewItem(row)
@@ -193,7 +193,7 @@ namespace GUI
         {
             var podcasts = ListOfPodcast.GetPodcastFromJsonKategori(kategori);
             lwPodcast.Items.Clear();
-            foreach (var p in podcasts)
+            foreach (Podcast p in podcasts)
             {
                 var row = new string[] { p.Url, p.Name, p.AntalAvsnitt.ToString(), p.UppdateringsFrekvens, p.Kategori };
                 var lvi = new ListViewItem(row)
@@ -204,20 +204,19 @@ namespace GUI
 
             }
         }
-        public async Task RefreshKategoriList()
+        public void RefreshKategoriListAsync(ListBox lbxKategorier, ComboBox cbxKategori)
         {
-            await Task.Run(() =>
+            /* Tagit bort async, behövs den? */
+            lbxKategorier.Items.Clear();
+            cbxKategori.Items.Clear();
+            var kategorier = ListOfKategori.GetKategoriFromJson();
+            foreach (var k in kategorier)
             {
-                lbxKategorier.Items.Clear();
-                cbxKategori.Items.Clear();
-                var kategorier = ListOfKategori.GetKategoriFromJson();
-                foreach (var k in kategorier)
-                {
-                    lbxKategorier.Items.Add(k.Name);
-                    cbxKategori.Items.Add(k.Name);
-                }
-            });
-            
+                lbxKategorier.Items.Add(k.Name);
+                cbxKategori.Items.Add(k.Name);
+            }
+
+
         }
 
         private void lbxKategorier_SelectedIndexChanged(object sender, EventArgs e)
@@ -228,10 +227,10 @@ namespace GUI
             }
         }
 
-        private async void btnRefresh_Click(object sender, EventArgs e)
+        private void btnRefresh_Click(object sender, EventArgs e)
         {
             RefreshListView();
-            await RefreshKategoriList();
+            RefreshKategoriListAsync(lbxKategorier, cbxKategori);
         }
 
         private void btnSort_Click(object sender, EventArgs e)
@@ -248,42 +247,37 @@ namespace GUI
 
                 StreamWriter sr = new StreamWriter(@".\Interval.txt");
                 // timer med 5 minut
-                oneMTimer = new Timer(6000);
-                oneMTimer.Elapsed += OnTimedEvent;
-                oneMTimer.AutoReset = true;
-                oneMTimer.Enabled = true;
-                // timer med 10 minut
-                twoMTimer = new Timer(120000);
-                twoMTimer.Elapsed += OnTimedEvent;
-                twoMTimer.AutoReset = true;
-                twoMTimer.Enabled = true;
-                // timer med 15 minut
-                threeMTimer = new Timer(180000);
-                threeMTimer.Elapsed += OnTimedEvent;
-                threeMTimer.AutoReset = true;
-                threeMTimer.Enabled = true;
-                // timer med 20 minut
-                fourMTimer = new Timer(240000);
-                fourMTimer.Elapsed += OnTimedEvent;
-                fourMTimer.AutoReset = true;
-                fourMTimer.Enabled = true;
+                while (true)
+                {
+                    Task.Delay(5000);
+                    foreach (var item in eventlog)
+                        sr.WriteLine(item);
+                    OnTimedEvent();
+                }
+                //oneMTimer = new Timer(6000);
+                //oneMTimer.Elapsed += OnTimedEvent;
+                //oneMTimer.AutoReset = true;
+                //oneMTimer.Enabled = true;
+                
 
+                
+                //Console.WriteLine("Press the Enter key to exit the program... ");
+                //Console.ReadLine();
+                
+                //sr.Close();
+                //Console.WriteLine("Terminating the application...");
 
-                Console.WriteLine("Press the Enter key to exit the program... ");
-                Console.ReadLine();
-                foreach (var item in eventlog)
-                    sr.WriteLine(item);
-                sr.Close();
-                Console.WriteLine("Terminating the application...");
-
+                ///* Disposea allt som är IDisposable */
+                //sr.Dispose();
+                
             });
             
         }
 
-        public async void OnTimedEvent(Object source, ElapsedEventArgs e)
+        public void OnTimedEvent()
         {
             
-            await RefreshKategoriList();
+            RefreshKategoriListAsync(lbxKategorier, cbxKategori);
            
         }
     }
